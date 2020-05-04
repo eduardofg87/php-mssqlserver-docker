@@ -1,0 +1,67 @@
+version: "3"
+services:
+  server:
+    build:
+      context: ./container-build
+      dockerfile: webserver.dockerfile
+    container_name: test.apache
+    environment:
+      - ALLOW_OVERRIDE=all
+      - XDEBUG_CONFIG=remote_host=127.0.0.1
+      - PHP_IDE_CONFIG=serverName=projetos.xdebug
+    ports:
+      - "${APACHE_PORT}:80"
+      - "${APACHE_SSL_PORT}:443"
+      - "${PHP_XDEBUG_PORT}:9000"
+    volumes:
+      - "${SITES_DIRECTORY}:/var/www/html"
+      - "./server/apache/apache2.conf:/etc/apache2/apache2.conf"
+      - "./server/apache/sites-available:/etc/apache2/sites-available"
+      - "./server/apache/sites-available:/etc/apache2/sites-enabled"
+    restart: "always"
+    tty: true
+    depends_on:
+      - mssql
+      - mariadb
+    links:
+      - mssql
+      - mariadb
+    # networks:
+    #   - test.network
+
+  mssql:
+    image: microsoft/mssql-server-linux:2017-latest
+    container_name: test.mssql
+    environment:
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+      - ACCEPT_EULA=Y
+    ports:
+      - "${MSSQL_PORT}:1433"
+    volumes:
+      - "./server/mssql:/var/opt/mssql"
+    restart: "always"
+    tty: true
+    # networks:
+    #   - test.network
+  
+  mariadb:
+    image: mariadb:latest
+    container_name: test.mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MYSQL_USER=${MARIADB_USER}
+      - MYSQL_USER_PASSWORD=${MARIADB_USER_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - "${MARIADB_CONFIG_DIR}:/etc/mysql"
+      - "${MARIADB_DATA_DIR}:/var/lib/mysql"
+    restart: "always"
+    tty: true
+    # networks:
+    #   - test.network
+
+# Docker Networks
+# networks:
+#   test.network:
+#     driver: bridge
